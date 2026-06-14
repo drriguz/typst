@@ -45,6 +45,12 @@ impl<'a> SvgElem<'a> {
         f(self);
         self
     }
+
+    /// Write text content inside the element.
+    pub fn text(&mut self, content: &str) -> &mut Self {
+        self.xml.write_text(content);
+        self
+    }
 }
 
 impl Drop for SvgElem<'_> {
