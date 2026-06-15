@@ -5,6 +5,7 @@ use typst_library::text::TextItem;
 use typst_library::text::color::{
     GlyphFrame, GlyphFrameItem, glyph_frame, should_outline,
 };
+use typst_library::text::FontFlags;
 use typst_library::visualize::{FillRule, Paint, RelativeTo};
 
 use crate::path::SvgPathBuilder;
@@ -32,16 +33,21 @@ impl SVGRenderer<'_> {
         state: &State,
         text: &TextItem,
     ) {
+        // Math fonts must always be rendered as shapes (<use> with paths),
+        // not as <text> elements. Browsers typically don't have math fonts
+        // installed, so <text> with math font-family won't render correctly.
+        let is_math_font = text.font.info().flags.contains(FontFlags::MATH);
+
         // Check if all glyphs can be rendered as outline glyphs (selectable text)
         let all_outline = text.glyphs.iter().all(|g| {
             should_outline(&text.font, GlyphId(g.id))
         });
 
-        if all_outline && !text.glyphs.is_empty() {
+        if !is_math_font && all_outline && !text.glyphs.is_empty() {
             // Render as <text> elements for selectable text
             self.render_text_as_svg_text(svg, state, text);
         } else {
-            // Fall back to <use> elements for color/image glyphs
+            // Fall back to <use> elements for color/image glyphs or math fonts
             self.render_text_as_glyphs(svg, state, text);
         }
     }
